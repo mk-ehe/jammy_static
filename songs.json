@@ -163,6 +163,15 @@
     },
     {
         "id": 19,
+        "title": "Ignite",
+        "artist": "CHYL, Haus of Panda, MYLK",
+        "duration": 196,
+        "video_file": "https://cdn.perfumr.pl/mp4/Ignite.mp4",
+        "cover_img": "https://cdn.perfumr.pl/covers/Ignite.jpg",
+        "main_color": "#ff5a30"
+    },
+    {
+        "id": 20,
         "title": "Divination",
         "artist": "Juelz",
         "duration": 204,
