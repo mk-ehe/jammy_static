@@ -116,6 +116,8 @@ function playSong(song, playBtn, songElement) {
             player.style.setProperty("--active-color-hover", song.main_color)
         }
         
+        updateProgressBarColor(0, 1);
+        
     } else {
         if (bgVideo.paused) {
             var playPromise = bgVideo.play();
@@ -333,6 +335,7 @@ bgVideo.addEventListener('ended', () => {
     const nextCard = allCards[nextIndex];
     const nextBtn = nextCard.querySelector('.play-btn');
     if (nextBtn) {
+        updateProgressBarColor(0, 1);
         nextBtn.click();
         nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
