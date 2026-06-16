@@ -116,7 +116,15 @@ function playSong(song, playBtn, songElement) {
             player.style.setProperty("--active-color-hover", song.main_color)
         }
         
-        updateProgressBarColor(0, 1);
+        progressBar.value = 0;
+        progressBar.max = 100;
+        bgVideo.currentTime = 0;
+        updateProgressBarColor(0, 100);
+        
+        bgVideo.addEventListener('loadedmetadata', () => {
+            progressBar.max = bgVideo.duration;
+            updateProgressBarColor(0, bgVideo.duration);
+        }, { once: true });
         
     } else {
         if (bgVideo.paused) {
@@ -335,7 +343,6 @@ bgVideo.addEventListener('ended', () => {
     const nextCard = allCards[nextIndex];
     const nextBtn = nextCard.querySelector('.play-btn');
     if (nextBtn) {
-        updateProgressBarColor(0, 1);
         nextBtn.click();
         nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
