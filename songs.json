@@ -172,6 +172,15 @@
     },
     {
         "id": 20,
+        "title": "Release Me",
+        "artist": "Arcando & Charlotte Haining",
+        "duration": 227,
+        "video_file": "https://cdn.perfumr.pl/mp4/Release_Me.mp4",
+        "cover_img": "https://cdn.perfumr.pl/covers/Release_Me.jpg",
+        "main_color": "#d000ff"
+    },
+    {
+        "id": 21,
         "title": "Divination",
         "artist": "Juelz",
         "duration": 204,
