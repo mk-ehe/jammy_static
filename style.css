@@ -405,8 +405,8 @@ body.idle-mode {
 
 .switch {
   position: fixed;
-  top: 5px;
-  right: 10px;
+  top: 2px;
+  right: 7px;
   display: inline-block;
   width: 24px;
   height: 18px;
