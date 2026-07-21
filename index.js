@@ -1,5 +1,6 @@
 const container = document.getElementById("container");
 const bgVideo = document.getElementById("bg-video");
+const bgAudio = document.getElementById("bg-audio");
 const hideBtn = document.getElementById('hide-btn');
 const player = document.getElementById("player");
 const warningContainer = document.getElementById("warning-container");
@@ -20,12 +21,17 @@ let activeSongElement = null;
 let isDragging = false;
 let songsData = [];
 
-bgVideo.volume = parseFloat(volumeSlider.value);
-lastVolume = parseFloat(volumeSlider.value);
+const initialVolume = parseFloat(volumeSlider.value);
+bgVideo.volume = initialVolume;
+bgAudio.volume = initialVolume;
+lastVolume = initialVolume;
 
 const preloader = document.createElement('video');
+const audioPreloader = document.createElement('audio');
 preloader.preload = "auto";
+audioPreloader.preload = "auto";
 preloader.volume = 0;
+audioPreloader.volume = 0;
 
 function formatTime(seconds) {
     const min = Math.floor(seconds / 60);
@@ -44,7 +50,9 @@ function preloadNextSong(currentSong) {
     const nextSong = songsData[nextIndex];
     if (nextSong) {
         preloader.src = nextSong.video_file;
+        audioPreloader.src = nextSong.music_file;
         preloader.load();
+        audioPreloader.load();
     }
 }
 
@@ -57,9 +65,9 @@ function updateProgressBarColor(current, total) {
 
 
 function progressLoop() {
-    if (!bgVideo.paused && !isDragging) {
-        const currentTime = bgVideo.currentTime;
-        const duration = bgVideo.duration;
+    if ((!bgVideo.paused || !bgAudio.paused) && !isDragging) {
+        const currentTime = !bgVideo.paused ? bgVideo.currentTime : bgAudio.currentTime;
+        const duration = !bgVideo.paused ? bgVideo.duration : bgAudio.duration;
 
         if (!isNaN(duration)) {
             progressBar.max = duration;
@@ -84,14 +92,28 @@ function playSong(song, playBtn, songElement) {
         currentSongData = song; 
         hasPreloadedNext = false;
 
-        bgVideo.src = song.video_file;
-        bgVideo.style.display = "block";
-        
+        const switchInput = document.querySelector('.switch input');
+        const isAudioMode = switchInput && switchInput.checked;
 
-        var playPromise = bgVideo.play();
+        if (isAudioMode) {
+            bgAudio.src = song.music_file;
+            bgVideo.style.display = "none";
+            
+            var audioPromise = bgAudio.play();
+            if (audioPromise !== undefined) {
+                audioPromise.catch(error => {});
+            }
+        } else {
+            bgVideo.src = song.video_file;
+            bgVideo.style.display = "block";
+            bgAudio.pause();
+            bgAudio.src = "";
+            
+            var playPromise = bgVideo.play();
             if (playPromise !== undefined) {
                 playPromise.catch(error => {});
             }
+        }
         
         playBtn.innerHTML = `
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="padding-top: 2px">
@@ -130,16 +152,36 @@ function playSong(song, playBtn, songElement) {
         progressBar.value = 0;
         progressBar.max = 100;
         bgVideo.currentTime = 0;
+        bgAudio.currentTime = 0;
         updateProgressBarColor(0, 100);
         
         bgVideo.addEventListener('loadedmetadata', () => {
             progressBar.max = bgVideo.duration;
             updateProgressBarColor(0, bgVideo.duration);
         }, { once: true });
+
+        bgAudio.addEventListener('loadedmetadata', () => {
+            progressBar.max = bgAudio.duration;
+            updateProgressBarColor(0, bgAudio.duration);
+        }, { once: true });
         
     } else {
-        if (bgVideo.paused) {
+        const isVideoMode = !bgVideo.paused || (bgVideo.paused && bgAudio.paused && !switchInput.checked);
+        
+        if (isVideoMode && bgVideo.paused) {
             var playPromise = bgVideo.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {});
+            }
+            playBtn.innerHTML = `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="padding-top: 2px">
+                    <rect x="6" y="4" width="4" height="16"></rect>
+                    <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+            `;
+            playerPlayBtn.innerHTML = playBtn.innerHTML;
+        } else if (!isVideoMode && bgAudio.paused) {
+            var playPromise = bgAudio.play();
             if (playPromise !== undefined) {
                 playPromise.catch(error => {});
             }
@@ -152,6 +194,7 @@ function playSong(song, playBtn, songElement) {
             playerPlayBtn.innerHTML = playBtn.innerHTML;
         } else {
             bgVideo.pause();
+            bgAudio.pause();
             playBtn.textContent = "▶";
             playerPlayBtn.textContent = "▶";
         }   
@@ -198,8 +241,17 @@ fetch("songs.json")
 
             songElement.addEventListener("dblclick", () => {
                 if (activeSongElement === songElement) {
-                    bgVideo.currentTime = 0;
-                    bgVideo.play();
+                    const switchInput = document.querySelector('.switch input');
+                    const isAudioMode = switchInput && switchInput.checked;
+
+                    if (isAudioMode) {
+                        bgAudio.currentTime = 0;
+                        bgAudio.play();
+                    } else {
+                        bgVideo.currentTime = 0;
+                        bgVideo.play();
+                    }
+
                     playBtn.innerHTML = `
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="padding-top: 2px">
                             <rect x="6" y="4" width="4" height="16"></rect>
@@ -293,6 +345,7 @@ const iconSound = `
 volumeSlider.addEventListener("input", (event) => {
     const volumeValue = parseFloat(event.target.value);
     bgVideo.volume = volumeValue;
+    bgAudio.volume = volumeValue;
 
     if (volumeValue > 0) {
         lastVolume = volumeValue;
@@ -309,25 +362,32 @@ volumeBtn.addEventListener("click", () => {
         lastVolume = currentVol;
         volumeBtn.innerHTML = iconMute;
         bgVideo.volume = 0;
+        bgAudio.volume = 0;
         volumeSlider.value = 0;
 
     } else {
         const restoreAmount = lastVolume > 0 ? lastVolume : 0.28;
         volumeBtn.innerHTML = iconSound;
         bgVideo.volume = restoreAmount;
+        bgAudio.volume = restoreAmount;
         volumeSlider.value = restoreAmount;
     }
 })
 
 playerPlayBtn.addEventListener("click", () => {
-    if (activeBtn && bgVideo.paused) {
-        activeBtn.click();
-    } else {
-        playerPlayBtn.textContent = "▶";
-        activeBtn.click();
+    const isVideoPlaying = !bgVideo.paused;
+    const isAudioPlaying = !bgAudio.paused;
+
+    if (isVideoPlaying || isAudioPlaying) {
         bgVideo.pause();
+        bgAudio.pause();
+        playerPlayBtn.textContent = "▶";
+    } else {
+        if (activeBtn) {
+            activeBtn.click();
         }
-    });
+    }
+});
 
 bgVideo.addEventListener('pause', () => {
     document.body.classList.remove("idle-mode");
@@ -339,7 +399,38 @@ bgVideo.addEventListener('play', () => {
     resetIdleTimer;
 });
 
+bgAudio.addEventListener('pause', () => {
+    document.body.classList.remove("idle-mode");
+    clearTimeout(idleTimer);
+});
+
+bgAudio.addEventListener('play', () => {
+    requestAnimationFrame(progressLoop);
+    resetIdleTimer;
+});
+
 bgVideo.addEventListener('ended', () => {
+    const activeCard = document.querySelector('.active-card');
+    if (!activeCard) return;
+
+    const allCards = Array.from(document.querySelectorAll('.song-card'));
+    const currentIndex = allCards.indexOf(activeCard);
+    let nextIndex = currentIndex + 1;
+    
+    if (nextIndex >= allCards.length) {
+        nextIndex = 0;
+    }
+
+    const nextCard = allCards[nextIndex];
+    const nextBtn = nextCard.querySelector('.play-btn');
+    if (nextBtn) {
+        nextBtn.click();
+        nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    resetIdleTimer();
+});
+
+bgAudio.addEventListener('ended', () => {
     const activeCard = document.querySelector('.active-card');
     if (!activeCard) return;
 
@@ -376,6 +467,21 @@ bgVideo.addEventListener('timeupdate', () => {
     }
 });
 
+bgAudio.addEventListener('timeupdate', () => {
+    const currentTime = bgAudio.currentTime;
+    const duration = bgAudio.duration;
+    if (!isDragging && !isNaN(bgAudio.duration)) {
+        durationElement.textContent = formatTime(currentTime);
+
+        if (!hasPreloadedNext && (duration - currentTime <= 10)) {
+            hasPreloadedNext = true;
+            if (currentSongData) {
+                preloadNextSong(currentSongData);
+            }
+        }
+    }
+});
+
 progressBar.addEventListener('mousedown', () => { isDragging = true; });
 progressBar.addEventListener('touchstart', () => { isDragging = true; });
 
@@ -387,13 +493,16 @@ progressBar.addEventListener('input', (e) => {
 
 progressBar.addEventListener('change', (e) => {
     isDragging = false;
-    bgVideo.currentTime = parseFloat(e.target.value);
+    const seekTime = parseFloat(e.target.value);
     
-    if(bgVideo.paused) {
+    if (!bgVideo.paused) {
+        bgVideo.currentTime = seekTime;
         updateProgressBarColor(bgVideo.currentTime, bgVideo.duration);
     } else {
-        requestAnimationFrame(progressLoop);
+        bgAudio.currentTime = seekTime;
+        updateProgressBarColor(bgAudio.currentTime, bgAudio.duration);
     }
+    requestAnimationFrame(progressLoop);
 });
 
 let idleTimer;
@@ -416,10 +525,45 @@ const switchInput = document.querySelector('.switch input');
 const switchSlider = document.querySelector('.slider');
 if (switchInput) {
     switchInput.addEventListener('change', () => {
-        if (switchInput.checked) {
-            switchSlider.classList.add('slider-active');
-        } else {
-            switchSlider.classList.remove('slider-active');
+        if (switchSlider) {
+            if (switchInput.checked) {
+                switchSlider.classList.add('slider-active');
+            } else {
+                switchSlider.classList.remove('slider-active');
+            }
+        }
+
+        if (currentSongData) {
+            const currentTime = bgVideo.paused ? bgAudio.currentTime : bgVideo.currentTime;
+            const isPlaying = !bgVideo.paused || !bgAudio.paused;
+
+            bgVideo.style.opacity = '0';
+
+            setTimeout(() => {
+                if (switchInput.checked) {
+                    bgVideo.pause();
+                    bgVideo.currentTime = 0;
+                    bgVideo.style.display = "none";
+                    bgAudio.src = currentSongData.music_file;
+                    bgAudio.currentTime = currentTime;
+                    
+                    if (isPlaying) {
+                        bgAudio.play().catch(error => {});
+                    }
+                } else {
+                    bgAudio.pause();
+                    bgAudio.currentTime = 0;
+                    bgVideo.src = currentSongData.video_file;
+                    bgVideo.style.display = "block";
+                    bgVideo.currentTime = currentTime;
+                    
+                    if (isPlaying) {
+                        bgVideo.play().catch(error => {});
+                    }
+                }
+                
+                bgVideo.style.opacity = '1';
+            }, 300);
         }
     });
     if (switchInput.checked) {

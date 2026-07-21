@@ -152,7 +152,8 @@ p {
     display: none;
     filter: brightness(0.75);
     pointer-events: none;
-    transition: filter 0.6s ease;
+    transition: filter 0.6s ease, opacity 0.3s ease;
+    opacity: 1;
 }
 .video-bg-undimmed {
     filter: brightness(1);
@@ -407,8 +408,8 @@ body.idle-mode {
   top: 5px;
   right: 10px;
   display: inline-block;
-  width: 40px;
-  height: 17px;
+  width: 24px;
+  height: 18px;
   z-index: 998;
 }
 
@@ -488,8 +489,9 @@ input:checked + .slider:before {
 
 .switch-text {
     font-size: 9px;
-    width: 120%;
-    font-weight: bold;
-    margin-left: -2px;
-    margin-top: 1px;
+    width: 100%;
+    font-weight: bolder;
+    margin-left: 1px;
+    margin-top: 2px;
+    text-align: center;
 }
