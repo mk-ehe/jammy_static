@@ -114,6 +114,17 @@ function playSong(song, playBtn, songElement) {
             hideBtn.style.setProperty("--main-color-hover", song.main_color+"30")
             player.style.setProperty("--active-color", song.main_color+"a4")
             player.style.setProperty("--active-color-hover", song.main_color)
+            document.body.style.setProperty("--active-color-hover", song.main_color);
+            
+            const switchSlider = document.querySelector('.slider');
+            const switchInput = document.querySelector('.switch input');
+            if (switchSlider && switchInput) {
+                if (switchInput.checked) {
+                    switchSlider.classList.add('slider-active');
+                } else {
+                    switchSlider.classList.remove('slider-active');
+                }
+            }
         }
         
         progressBar.value = 0;
@@ -400,3 +411,18 @@ function resetIdleTimer() {
 ['mousemove', 'mousedown', 'keypress', 'touchstart', 'scroll'].forEach(evt => {
     document.addEventListener(evt, resetIdleTimer);
 });
+
+const switchInput = document.querySelector('.switch input');
+const switchSlider = document.querySelector('.slider');
+if (switchInput) {
+    switchInput.addEventListener('change', () => {
+        if (switchInput.checked) {
+            switchSlider.classList.add('slider-active');
+        } else {
+            switchSlider.classList.remove('slider-active');
+        }
+    });
+    if (switchInput.checked) {
+        switchSlider.classList.add('slider-active');
+    }
+}
