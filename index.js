@@ -81,9 +81,11 @@ function progressLoop() {
 
 
 function playSong(song, playBtn, songElement) {
-    const isNewSong = !bgVideo.src.includes(song.video_file);
+    const switchInput = document.querySelector('.switch input');
+    const isAudioMode = switchInput && switchInput.checked;
+    const isSameSong = !!currentSongData && currentSongData.video_file === song.video_file && currentSongData.music_file === song.music_file;
 
-    if (isNewSong) {
+    if (!isSameSong) {
         if (activeBtn) {
             activeBtn.textContent = "▶";
             activeSongElement.classList.remove("active-card");
@@ -92,10 +94,9 @@ function playSong(song, playBtn, songElement) {
         currentSongData = song; 
         hasPreloadedNext = false;
 
-        const switchInput = document.querySelector('.switch input');
-        const isAudioMode = switchInput && switchInput.checked;
-
         if (isAudioMode) {
+            bgVideo.pause();
+            bgAudio.pause();
             bgAudio.src = song.music_file;
             bgVideo.style.display = "none";
             
@@ -104,9 +105,10 @@ function playSong(song, playBtn, songElement) {
                 audioPromise.catch(error => {});
             }
         } else {
+            bgVideo.pause();
+            bgAudio.pause();
             bgVideo.src = song.video_file;
             bgVideo.style.display = "block";
-            bgAudio.pause();
             bgAudio.src = "";
             
             var playPromise = bgVideo.play();
@@ -166,7 +168,7 @@ function playSong(song, playBtn, songElement) {
         }, { once: true });
         
     } else {
-        const isVideoMode = !bgVideo.paused || (bgVideo.paused && bgAudio.paused && !switchInput.checked);
+        const isVideoMode = !bgVideo.paused || (bgVideo.paused && bgAudio.paused && !isAudioMode);
         
         if (isVideoMode && bgVideo.paused) {
             var playPromise = bgVideo.play();
